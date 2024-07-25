@@ -11,7 +11,7 @@ const BALL_COLOUR: Color = Color::srgb(1.0, 0.0, 0.0);
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_system(Startup, startup)
+        .add_systems(Startup, startup)
         .run();
 }
 
