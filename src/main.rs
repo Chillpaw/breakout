@@ -10,8 +10,8 @@ const BALL_COLOUR: Color = Color::srgb(1.0, 0.0, 0.0);
 
 const BACKGROUND_COLOUR: Color = Color::srgb(0.0, 0.0, 0.0);
 
-const GAME_WIDTH: f32 = 800.0;
-const GAME_HEIGHT: f32 = 600.0;
+const GAME_WIDTH: f32 = 1280.0;
+const GAME_HEIGHT: f32 = 720.0;
 const ARENA_PADDING: f32 = 50.0;
 
 const WALL_COLOUR: Color = Color::srgb(1.0, 1.0, 1.0);
@@ -154,15 +154,15 @@ fn move_paddle(
         let mut direction = 0.0;
         if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
             direction -= 1.0;
-            println!("Left");
+            //println!("Left");
         }
         if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
             direction += 1.0;
-            println!("Right");
+            //println!("Right");
         }
         position.x += direction * PADDLE_SPEED * time.delta_seconds();
-        println!("Position: {}", position.x);
-        println!("Time elapsed: {}", time.delta_seconds());
+        //println!("Position: {}", position.x);
+        //println!("Time elapsed: {}", time.delta_seconds());
         position.x = position
             .x
             .min(4000.0 - size.width / 2.0)
@@ -179,8 +179,9 @@ fn ball_movement(time: Res<Time>, mut query: Query<(&Ball, &mut Position, &mut V
 
 fn ball_collision(
     mut commands: Commands,
-    mut ball_query: Query<(Entity, &Ball, &Position, &Velocity)>,
+    ball_query: Query<(Entity, &Ball, &Position, &Velocity)>,
     paddle_query: Query<(&Paddle, &Position, &Size)>,
+    brick_query: Query<(&Brick, &Position, &Size)>,
 ) {
 }
 
@@ -219,41 +220,53 @@ macro_rules! spawn_wall {
 }
 
 fn build_walls(mut commands: Commands) {
-    let wall_length = GAME_WIDTH - ARENA_PADDING * 2.0; //GAME_WIDTH less padding on each side
-    let wall_height = 10.0; // thickness of wall
+    let wall_length_x = GAME_WIDTH - (ARENA_PADDING * 2.0); //GAME_WIDTH less padding on each side
+    let wall_length_y = GAME_HEIGHT - (ARENA_PADDING * 2.0); //GAME_HEIGHT less padding on each side
+    let wall_depth = 10.0; // thickness of wall
 
-    let top_wall_position = Vec3::new(0.0, GAME_HEIGHT - wall_height / 2.0 - ARENA_PADDING, 0.0);
-    let bottom_wall_position =
-        Vec3::new(0.0, -GAME_HEIGHT + wall_height / 2.0 + ARENA_PADDING, 0.0);
+    let top_wall_position = Vec3::new(
+        0.0,
+        GAME_HEIGHT / 2.0 - wall_depth / 2.0 - ARENA_PADDING,
+        0.0,
+    );
+    let bottom_wall_position = Vec3::new(
+        0.0,
+        -GAME_HEIGHT / 2.0 + wall_depth / 2.0 + ARENA_PADDING,
+        0.0,
+    );
     let left_wall_position = Vec3::new(
-        -GAME_WIDTH / 2.0 + ARENA_PADDING + wall_height / 2.0,
+        -GAME_WIDTH / 2.0 + ARENA_PADDING + wall_depth / 2.0,
         0.0,
         0.0,
     );
     let right_wall_position = Vec3::new(
-        GAME_WIDTH / 2.0 - ARENA_PADDING - wall_height / 2.0,
+        GAME_WIDTH / 2.0 - ARENA_PADDING - wall_depth / 2.0,
         0.0,
         0.0,
     );
 
+    //top wall
     spawn_wall!(
         commands,
         top_wall_position,
-        Vec2::new(wall_length, wall_height)
+        Vec2::new(wall_length_x, wall_depth)
     );
+    //bottom wall
     spawn_wall!(
         commands,
         bottom_wall_position,
-        Vec2::new(wall_length, wall_height)
+        Vec2::new(wall_length_x, wall_depth)
     );
+    //left wall
     spawn_wall!(
         commands,
         left_wall_position,
-        Vec2::new(wall_height, wall_length)
+        Vec2::new(wall_depth, wall_length_y)
     );
+    //right wall
     spawn_wall!(
         commands,
         right_wall_position,
-        Vec2::new(wall_height, wall_length)
+        Vec2::new(wall_depth, wall_length_y)
     );
 }
