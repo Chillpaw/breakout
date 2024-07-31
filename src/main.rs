@@ -85,7 +85,7 @@ fn main() {
             }),
             ..default()
         }))
-        .add_systems(Startup, (startup, spawn_paddle, spawn_ball))
+        .add_systems(Startup, (startup, spawn_paddle, spawn_ball, build_walls))
         .add_systems(
             Update,
             (
@@ -191,14 +191,38 @@ fn update_sprite_position(mut query: Query<(&mut Transform, &Position)>) {
     }
 }
 
+macro_rules! spawn_wall {
+    ($commands: expr, $position:expr, $size:expr) => {
+        $commands
+            .spawn(SpriteBundle {
+                sprite: Sprite {
+                    color: WALL_COLOUR,
+                    custom_size: Some($size),
+                    ..default()
+                },
+                transform: Transform {
+                    translation: $position,
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(Wall)
+            .insert(Position {
+                x: $position.x,
+                y: $position.y,
+            })
+            .insert(Size {
+                width: $size.x,
+                height: $size.y,
+            });
+    };
+}
+
 fn build_walls(mut commands: Commands) {
     let wall_length = GAME_WIDTH - ARENA_PADDING * 2.0; //GAME_WIDTH less padding on each side
     let wall_height = 10.0; // thickness of wall
 
-    let top_wall_position = Vec3::new(
-        0.0, 
-        GAME_HEIGHT - wall_height / 2.0 - ARENA_PADDING, 
-        0.0);
+    let top_wall_position = Vec3::new(0.0, GAME_HEIGHT - wall_height / 2.0 - ARENA_PADDING, 0.0);
     let bottom_wall_position =
         Vec3::new(0.0, -GAME_HEIGHT + wall_height / 2.0 + ARENA_PADDING, 0.0);
     let left_wall_position = Vec3::new(
@@ -212,29 +236,24 @@ fn build_walls(mut commands: Commands) {
         0.0,
     );
 
-    
-    spawn_wall!(top_wall_position, Vec2::new(wall_length, wall_height));
-    spawn_wall!(bottom_wall_position, Vec2::new(wall_length, wall_height));
-    spawn_wall!(left_wall_position, Vec2::new(wall_height, wall_length));
-    spawn_wall!(right_wall_position, Vec2::new(wall_height, wall_length));
-}
-
-macro_rules! spawn_wall {
-    ($position:expr, $size:expr) => {
-        commands.spawn(SpriteBundle {
-            sprite: Sprite {
-                color: WALL_COLOUR,
-                custom_size: Some($size),
-                ..default()
-            },
-            transform: Transform {
-                translation: $position,
-                ..default()
-            },
-            ..default()
-        })
-        .insert(Wall)
-        .insert(Position { x: $position.x, y: $position.y })
-        .insert(Size { width: $size.x, height: $size.y });
-    };
+    spawn_wall!(
+        commands,
+        top_wall_position,
+        Vec2::new(wall_length, wall_height)
+    );
+    spawn_wall!(
+        commands,
+        bottom_wall_position,
+        Vec2::new(wall_length, wall_height)
+    );
+    spawn_wall!(
+        commands,
+        left_wall_position,
+        Vec2::new(wall_height, wall_length)
+    );
+    spawn_wall!(
+        commands,
+        right_wall_position,
+        Vec2::new(wall_height, wall_length)
+    );
 }
