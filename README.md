@@ -2,6 +2,8 @@
 
 Welcome to my breakout game project! This is a beginner project that I'm working on to learn Rust and Bevy, a game engine for the Rust programming language.
 
+I've tried my best to not reference the Bevy breakout example however, the ball collision logic was a challenge so I took a look at the example's code prior to my implementation. All part of the learning process.
+
 ## Objective
 
 The objective of the breakout game is to break all the bricks on the screen by bouncing a ball off a paddle. The player controls the paddle and must prevent the ball from falling off the bottom of the screen.
