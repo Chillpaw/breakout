@@ -212,32 +212,29 @@ fn build_walls(mut commands: Commands) {
         0.0,
     );
 
-    macro_rules! spawn_wall {
-        () => {
-            
-        };
-    }
+    
+    spawn_wall!(top_wall_position, Vec2::new(wall_length, wall_height));
+    spawn_wall!(bottom_wall_position, Vec2::new(wall_length, wall_height));
+    spawn_wall!(left_wall_position, Vec2::new(wall_height, wall_length));
+    spawn_wall!(right_wall_position, Vec2::new(wall_height, wall_length));
+}
 
-    commands
-        .spawn(SpriteBundle {
+macro_rules! spawn_wall {
+    ($position:expr, $size:expr) => {
+        commands.spawn(SpriteBundle {
             sprite: Sprite {
                 color: WALL_COLOUR,
-                custom_size: Some(Vec2::new(wall_length, wall_height)),
+                custom_size: Some($size),
                 ..default()
             },
             transform: Transform {
-                translation: top_wall_position,
+                translation: $position,
                 ..default()
             },
             ..default()
         })
-        .insert(Position {
-            x: 0.0,
-            y: GAME_HEIGHT / 2.0 - wall_height / 2.0,
-        })
-        .insert(Size {
-            width: wall_length,
-            height: wall_height,
-        })
-        .insert(Wall);
+        .insert(Wall)
+        .insert(Position { x: $position.x, y: $position.y })
+        .insert(Size { width: $size.x, height: $size.y });
+    };
 }
