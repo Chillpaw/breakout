@@ -1,5 +1,11 @@
-use bevy::prelude::*;
+use bevy::ecs::system::Query;
+use bevy::ecs::world::World;
+use bevy::math::Vec3;
 
+use bevy::prelude::*;
+use std::collections::HashMap;
+
+#[derive(Component)]
 pub struct Collider {
     pub radius: f32,
     pub colliding_entities: Vec<Entity>,
@@ -12,10 +18,4 @@ impl Collider {
             colliding_entities: vec![],
         }
     }
-}
-
-pub fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collier)>) {
-    let mut colliding_entities: HashMap<Entity, Vec<Entity>> = HashMap::new();
-
-    
 }

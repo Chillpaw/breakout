@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::Window};
+mod collision;
 
 const PADDLE_SPEED: f32 = 500.0;
 const PADDLE_COLOUR: Color = Color::srgb(0.0, 0.0, 1.0);
