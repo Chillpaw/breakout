@@ -4,6 +4,7 @@ const PADDLE_SPEED: f32 = 500.0;
 const PADDLE_COLOUR: Color = Color::srgb(0.0, 0.0, 1.0);
 const PADDLE_WIDTH: f32 = 100.0;
 const PADDLE_HEIGHT: f32 = 20.0;
+const PADDLE_WORLD_HEIGHT: f32 = 100.0;
 
 const BALL_SPEED: f32 = 300.0;
 const BALL_COLOUR: Color = Color::srgb(1.0, 0.0, 0.0);
@@ -15,6 +16,7 @@ const GAME_HEIGHT: f32 = 720.0;
 const ARENA_PADDING: f32 = 50.0;
 
 const WALL_COLOUR: Color = Color::srgb(1.0, 1.0, 1.0);
+const WALL_DEPTH: f32 = 10.0;
 
 const BRICK_WIDTH: f32 = 50.0;
 const BRICK_HEIGHT: f32 = 20.0;
@@ -113,13 +115,16 @@ fn spawn_paddle(mut commands: Commands) {
                 ..default()
             },
             transform: Transform {
-                translation: Vec3::new(0.0, -100.0, 0.0),
+                translation: Vec3::new(0.0, -GAME_HEIGHT / 2.0 + PADDLE_WORLD_HEIGHT, 0.0),
                 ..default()
             },
             ..default()
         })
         .insert(Paddle)
-        .insert(Position { x: 0.0, y: -100.0 })
+        .insert(Position {
+            x: 0.0,
+            y: -GAME_HEIGHT / 2.0 + PADDLE_WORLD_HEIGHT,
+        })
         .insert(Size {
             width: PADDLE_WIDTH,
             height: PADDLE_HEIGHT,
@@ -154,19 +159,16 @@ fn move_paddle(
         let mut direction = 0.0;
         if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
             direction -= 1.0;
-            //println!("Left");
         }
         if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
             direction += 1.0;
-            //println!("Right");
         }
-        position.x += direction * PADDLE_SPEED * time.delta_seconds();
-        //println!("Position: {}", position.x);
-        //println!("Time elapsed: {}", time.delta_seconds());
-        position.x = position
-            .x
-            .min(4000.0 - size.width / 2.0)
-            .max(-4000.0 + size.width / 2.0);
+
+        let new_x = position.x + direction * PADDLE_SPEED * time.delta_seconds();
+        let min_x = -GAME_WIDTH / 2.0 + ARENA_PADDING + WALL_DEPTH / 2.0 + size.width / 2.0;
+        let max_x = GAME_WIDTH / 2.0 - ARENA_PADDING - WALL_DEPTH / 2.0 - size.width / 2.0;
+        //clamp doesn't allow the paddle to go beyond the wall limits
+        position.x = new_x.clamp(min_x, max_x);
     }
 }
 
@@ -179,7 +181,7 @@ fn ball_movement(time: Res<Time>, mut query: Query<(&Ball, &mut Position, &mut V
 
 fn ball_collision(
     mut commands: Commands,
-    ball_query: Query<(Entity, &Ball, &Position, &Velocity)>,
+    mut ball_query: Query<(Entity, &Ball, &Position, &Velocity)>,
     paddle_query: Query<(&Paddle, &Position, &Size)>,
     brick_query: Query<(&Brick, &Position, &Size)>,
 ) {
@@ -222,7 +224,7 @@ macro_rules! spawn_wall {
 fn build_walls(mut commands: Commands) {
     let wall_length_x = GAME_WIDTH - (ARENA_PADDING * 2.0); //GAME_WIDTH less padding on each side
     let wall_length_y = GAME_HEIGHT - (ARENA_PADDING * 2.0); //GAME_HEIGHT less padding on each side
-    let wall_depth = 10.0; // thickness of wall
+    let wall_depth = WALL_DEPTH; // thickness of wall
 
     let top_wall_position = Vec3::new(
         0.0,
