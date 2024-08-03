@@ -1,4 +1,8 @@
-use bevy::{prelude::*, window::Window};
+use bevy::{
+    math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
+    prelude::*,
+    window::Window,
+};
 mod collision;
 
 const PADDLE_SPEED: f32 = 500.0;
@@ -7,8 +11,9 @@ const PADDLE_WIDTH: f32 = 100.0;
 const PADDLE_HEIGHT: f32 = 20.0;
 const PADDLE_WORLD_HEIGHT: f32 = 100.0;
 
-const BALL_SPEED: f32 = 300.0;
+const BALL_SPEED: f32 = 250.0;
 const BALL_COLOUR: Color = Color::srgb(1.0, 0.0, 0.0);
+const BALL_RADIUS: f32 = 5.0;
 
 const BACKGROUND_COLOUR: Color = Color::srgb(0.0, 0.0, 0.0);
 
@@ -24,7 +29,11 @@ const BRICK_HEIGHT: f32 = 20.0;
 const BRICK_COLOUR_1: Color = Color::srgb(1.0, 1.0, 0.0);
 const BRICK_COLOUR_2: Color = Color::srgb(0.0, 1.0, 1.0);
 const BRICK_COLOUR_3: Color = Color::srgb(1.0, 0.0, 1.0);
+#[derive(Component)]
+struct Collider;
 
+#[derive(Event, Default)]
+struct CollisionEvent;
 #[derive(Component)]
 struct Paddle;
 
@@ -39,7 +48,7 @@ struct Brick {
     hits: u8,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone, Debug)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -77,6 +86,9 @@ struct Size {
     height: f32,
 }
 
+#[derive(Resource, Deref, DerefMut)]
+struct Score(usize);
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -90,16 +102,19 @@ fn main() {
         }))
         .add_systems(Startup, (startup, spawn_paddle, spawn_ball, build_walls))
         .add_systems(
-            Update,
+            FixedUpdate,
             (
                 move_paddle,
                 ball_movement,
-                ball_collision,
+                check_for_collision,
                 update_sprite_position,
             )
                 .chain(),
         )
+        .add_systems(Update, log)
         .insert_resource(ClearColor(BACKGROUND_COLOUR))
+        .insert_resource(Score(0))
+        .add_event::<CollisionEvent>()
         .run();
 }
 
@@ -178,14 +193,6 @@ fn ball_movement(time: Res<Time>, mut query: Query<(&Ball, &mut Position, &mut V
         position.y += velocity.y * BALL_SPEED * time.delta_seconds();
         position.x += velocity.x * BALL_SPEED * time.delta_seconds();
     }
-}
-
-fn ball_collision(
-    mut commands: Commands,
-    mut ball_query: Query<(Entity, &Ball, &Position, &Velocity)>,
-    paddle_query: Query<(&Paddle, &Position, &Size)>,
-    brick_query: Query<(&Brick, &Position, &Size)>,
-) {
 }
 
 fn update_sprite_position(mut query: Query<(&mut Transform, &Position)>) {
@@ -272,4 +279,46 @@ fn build_walls(mut commands: Commands) {
         right_wall_position,
         Vec2::new(wall_depth, wall_length_y)
     );
+}
+
+fn check_for_collision(
+    mut commands: Commands,
+    mut score: ResMut<Score>,
+    mut ball_query: Query<(&mut Velocity, &Transform), With<Ball>>,
+    collider_query: Query<(Entity, &Transform, Option<&Brick>), With<Collider>>,
+    mut collision_events: EventWriter<CollisionEvent>,
+) {
+    let (mut ball_velocity, ball_transform) = ball_query.single_mut();
+    debug!("Ball velocity: {:?}", ball_velocity);
+    debug!("Ball position: {:?}", ball_transform.translation);
+    //
+    for (collider_entity, collider_transform, maybe_brick) in &collider_query {
+        debug!("Collider position: {:?}", collider_transform.translation);
+        debug!("Checking collider entity: {:?}", collider_entity);
+
+        let collision = collision::ball_collision(
+            BoundingCircle::new(ball_transform.translation.truncate(), BALL_RADIUS),
+            Aabb2d::new(
+                collider_transform.translation.truncate(),
+                collider_transform.scale.truncate() / 2.,
+            ),
+        );
+
+        if let Some(collision) = collision {
+            debug!("Collision detected: {:?}", collision);
+            collision_events.send_default();
+
+            //Reflect the ball on collision
+            match collision {
+                collision::Collision::Left | collision::Collision::Right => {
+                    ball_velocity.reflect(Axis::Y);
+                    debug!("Ball reflected on Y axis");
+                }
+                collision::Collision::Up | collision::Collision::Down => {
+                    ball_velocity.reflect(Axis::X);
+                    debug!("Ball reflected on X axis");
+                }
+            }
+        }
+    }
 }
